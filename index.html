@@ -1,0 +1,84 @@
+<!doctype html><html lang="ca"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Receptes de la Iaia</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#d2623f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#fbf4e6;--card:#fffaf0;--ink:#4a2e1d;--acc:#d2623f;--brn:#7a4527;--line:#ecd3a8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 'Iowan Old Style','Palatino Linotype',Georgia,serif;padding-bottom:84px}
+#app{max-width:640px;margin:auto;padding:12px 16px}
+h1,h2,h3{color:var(--brn);line-height:1.2}h1{font-size:1.9rem;margin:.6em 0 .1em}h2{font-size:1.25rem;margin:1.4em 0 .4em;border-bottom:2px solid var(--line)}h3{margin:0;font-size:1.15rem}
+.hero img{display:block;width:min(260px,70%);margin:0 auto 8px}
+input,select,textarea{width:100%;font:inherit;padding:11px 14px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink)}
+label{display:block;margin:12px 0;font-size:.95rem;color:var(--brn)}label input,label select,label textarea{margin-top:4px}.row{display:flex;gap:10px}.row>*{flex:1}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:10px 18px;background:var(--line);color:var(--brn)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.main{background:var(--acc);color:#fff;font-weight:700;width:100%;margin:14px 0}.ghost{background:transparent;border:2px solid var(--line);margin:8px 0}.row .ghost{margin:8px 0}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0}.chip{white-space:nowrap;padding:7px 14px}.chip.on{background:var(--acc);color:#fff}
+.card{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px 18px;margin:10px 0;cursor:pointer}
+.card p,.meta{margin:2px 0 0;color:#8a6a50;font-size:.9rem}.h{color:var(--acc);font-size:1.3rem}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.srv{display:flex;align-items:center;justify-content:center;gap:18px;background:var(--card);border-radius:999px;padding:6px;margin:14px 0}.srv button{width:44px;height:44px;padding:0;font-size:1.4rem;background:var(--acc);color:#fff}
+.ing{list-style:none;padding:0}.ing li{padding:8px 0;border-bottom:1px dashed var(--line)}ol{padding-left:22px}ol li{margin:10px 0}
+.note{background:#f6e3c0;border-radius:14px;padding:12px 16px}.empty{color:#8a6a50;text-align:center;padding:24px 0}
+.sh{list-style:none;padding:0}.sh li{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}.sh li.done{text-decoration:line-through;opacity:.5}
+.big{font-size:1.65rem;line-height:1.4;margin:8vh 0 4vh}details{margin:12px 0}summary{cursor:pointer;color:var(--brn)}
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:2px solid var(--line)}#nav button{flex:1;max-width:200px}#nav[hidden]{display:none}
+@media(prefers-reduced-motion:no-preference){button:active{transform:scale(.97)}}
+</style></head><body><main id="app"></main>
+<nav id="nav"><button onclick="go('home')">Receptes</button><button onclick="go('shop')">Compra <span id="bc"></span></button><button onclick="go('form',{ed:null})">Nova recepta</button></nav>
+<script>
+const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CATS=['Primers','Segons','Postres','Dolços','Altres'];
+const SEED=[
+{id:'s1',t:'Crema catalana',cat:'Postres',time:'45 min',serv:4,fav:1,ing:['500 ml llet','4 rovells d\'ou','100 g sucre','2 cullerades de maizena','1 pell de llimona','1 branca de canyella'],steps:['Escalfa la llet amb la pell de llimona i la canyella i deixa-la reposar 10 minuts.','Barreja els rovells amb el sucre i la maizena fins que quedi una pasta suau.','Cola la llet sobre la barreja i remena bé.','Cou-ho a foc baix sense parar de remenar fins que espesseixi.','Reparteix-ho en cassoletes i deixa-ho refredar a la nevera.','Abans de servir, crema-ho amb una capa fina de sucre.'],note:'No deixis mai de remenar: si bull, es talla.'},
+{id:'s2',t:'Mongetes amb botifarra',cat:'Segons',time:'30 min',serv:4,ing:['500 g mongetes del ganxet cuites','4 botifarres','3 grans d\'all','1 cullerada d\'oli'],steps:['Fregeix les botifarres a la paella fins que quedin daurades.','En una altra paella, daura els alls laminats amb l\'oli.','Afegeix-hi les mongetes i saltejà-les uns minuts.','Serveix-ho tot junt ben calent.'],note:''},
+{id:'s3',t:'Mel i mató',cat:'Postres',time:'5 min',serv:2,ing:['300 g mató','4 cullerades de mel','1 grapat de nous'],steps:['Posa el mató en un plat o en un bol.','Cobreix-lo amb la mel.','Esquerda les nous per sobre i serveix.'],note:'Una mel de farigola li va de meravella.'}];
+let R=JSON.parse(localStorage.getItem('rdi.r')||'null')||SEED,SH=JSON.parse(localStorage.getItem('rdi.s')||'[]'),S={v:'home',q:'',cat:'Totes',fav:0},WL;
+const save=()=>{localStorage.setItem('rdi.r',JSON.stringify(R));localStorage.setItem('rdi.s',JSON.stringify(SH))},get=id=>R.find(r=>r.id==id);
+const f=n=>String(Math.round(n*100)/100).replace('.',',');
+function sc(l,k){const m=l.match(/^(\d+(?:[.,]\d+)?)(?:\s*\/\s*(\d+))?\s*(.*)$/);if(!m)return l;let n=parseFloat(m[1].replace(',','.'));if(m[2])n/=+m[2];return f(n*k)+' '+m[3]}
+function go(v,o={}){Object.assign(S,{v},o);render();scrollTo(0,0)}
+function render(){$('#app').innerHTML=({home,det,cook,shop,form})[S.v]();$('#nav').hidden=S.v=='cook';const n=SH.filter(s=>!s.d).length;$('#bc').textContent=n?'('+n+')':''}
+const filt=()=>R.filter(r=>(S.cat=='Totes'||r.cat==S.cat)&&(!S.fav||r.fav)&&(r.t+' '+r.ing.join(' ')).toLowerCase().includes(S.q.toLowerCase()));
+const cards=l=>l.map(r=>`<article class="card" onclick="show('${r.id}')"><div><h3>${e(r.t)}</h3><p>${e(r.cat)}${r.time?', '+e(r.time):''}</p></div>${r.fav?'<span class="h">♥</span>':''}</article>`).join('')||'<p class="empty">No hi ha cap recepta amb aquest filtre. Prova una altra cerca o afegeix-ne una de nova.</p>';
+const list=()=>$('#list').innerHTML=cards(filt());
+function home(){return `<header class="hero"><img src="logo.jpg" alt="Receptes de la Iaia"></header>
+<input id="q" type="search" placeholder="Cerca una recepta o un ingredient" value="${e(S.q)}" oninput="S.q=this.value;list()">
+<div class="chips">${['Totes',...CATS].map(c=>`<button class="chip ${S.cat==c?'on':''}" onclick="S.cat='${c}';render()">${c}</button>`).join('')}<button class="chip ${S.fav?'on':''}" onclick="S.fav=!S.fav;render()">♥ Preferides</button></div>
+<div id="list">${cards(filt())}</div>
+<div class="row"><button class="ghost" onclick="exp()">Desa còpia</button><button class="ghost" onclick="$('#imp').click()">Recupera còpia</button></div><input id="imp" type="file" accept=".json" hidden onchange="imp(this)">`}
+function show(id){go('det',{id,srv:get(id).serv})}
+function det(){const r=get(S.id),k=S.srv/r.serv;return `<div class="bar"><button onclick="go('home')">‹ Receptes</button><button onclick="fav('${r.id}')" aria-label="Preferida">${r.fav?'♥':'♡'}</button></div>
+<h1>${e(r.t)}</h1><p class="meta">${e(r.cat)}${r.time?', '+e(r.time):''}</p>
+<div class="srv"><button onclick="srv(-1)" aria-label="Menys">−</button><b>${S.srv} racions</b><button onclick="srv(1)" aria-label="Més">+</button></div>
+<h2>Ingredients</h2><ul class="ing">${r.ing.map(i=>`<li>${e(sc(i,k))}</li>`).join('')}</ul>
+<button class="ghost" onclick="addShop()">Afegeix a la llista de la compra</button>
+<h2>Elaboració</h2><ol>${r.steps.map(s=>`<li>${e(s)}</li>`).join('')}</ol>${r.note?`<p class="note"><b>El truc de la iaia:</b> ${e(r.note)}</p>`:''}
+<button class="main" onclick="startCook()">Comença a cuinar</button>
+<div class="row"><button class="ghost" onclick="edit('${r.id}')">Edita</button><button class="ghost" onclick="del('${r.id}')">Esborra</button></div>`}
+function fav(id){const r=get(id);r.fav=r.fav?0:1;save();render()}
+function srv(d){S.srv=Math.max(1,S.srv+d);render()}
+function addShop(){const r=get(S.id),k=S.srv/r.serv;r.ing.forEach(i=>SH.push({t:sc(i,k)}));save();go('shop')}
+function del(id){if(confirm('Vols esborrar aquesta recepta?')){R=R.filter(r=>r.id!=id);save();go('home')}}
+async function wl(on){try{if(on)WL=await navigator.wakeLock.request('screen');else WL&&WL.release()}catch{}}
+function startCook(){wl(1);go('cook',{i:0})}
+function nxt(){if(S.i<get(S.id).steps.length-1){S.i++;render()}else{wl(0);go('det')}}
+function cook(){const r=get(S.id),n=r.steps.length,k=S.srv/r.serv;return `<div class="bar"><button onclick="wl(0);go('det')">Tanca</button><b>Pas ${S.i+1} de ${n}</b></div>
+<p class="big">${e(r.steps[S.i])}</p><details><summary>Ingredients</summary><ul class="ing">${r.ing.map(i=>`<li>${e(sc(i,k))}</li>`).join('')}</ul></details>
+<div class="row"><button class="ghost" ${S.i?'':'disabled'} onclick="S.i--;render()">Anterior</button><button class="main" onclick="nxt()">${S.i<n-1?'Següent':'Fet, bon profit!'}</button></div>`}
+function shop(){return `<h1>Llista de la compra</h1><form class="row" onsubmit="return addS()"><input id="si" placeholder="Afegeix un producte"><button class="main" style="flex:0 0 110px;margin:0">Afegeix</button></form>
+<ul class="sh">${SH.map((s,i)=>`<li class="${s.d?'done':''}" onclick="tg(${i})">${e(s.t)}</li>`).join('')||'<p class="empty">No hi ha res per comprar. Afegeix ingredients des d\'una recepta.</p>'}</ul>
+${SH.length?`<div class="row"><button class="ghost" onclick="SH=SH.filter(s=>!s.d);save();render()">Treu els marcats</button><button class="ghost" onclick="SH=[];save();render()">Buida-la</button></div>`:''}`}
+function addS(){const v=$('#si').value.trim();if(v){SH.push({t:v});save();render()}return false}
+function tg(i){SH[i].d=!SH[i].d;save();render()}
+function edit(id){go('form',{ed:get(id)})}
+function form(){const r=S.ed||{t:'',cat:'Primers',time:'',serv:4,ing:[],steps:[],note:''};return `<div class="bar"><button onclick="${S.ed?"go('det')":"go('home')"}">‹ Cancel·la</button></div><h1>${S.ed?'Edita la recepta':'Nova recepta'}</h1>
+<label>Nom<input id="ft" value="${e(r.t)}"></label><label>Tipus<select id="fc">${CATS.map(c=>`<option ${c==r.cat?'selected':''}>${c}</option>`).join('')}</select></label>
+<div class="row"><label>Temps<input id="fm" value="${e(r.time)}" placeholder="45 min"></label><label>Racions<input id="fs" type="number" min="1" value="${r.serv}"></label></div>
+<label>Ingredients (un per línia, ex. 200 g sucre)<textarea id="fi" rows="7">${e(r.ing.join('\n'))}</textarea></label>
+<label>Elaboració (un pas per línia)<textarea id="fp" rows="8">${e(r.steps.join('\n'))}</textarea></label>
+<label>El truc de la iaia<textarea id="fn" rows="2">${e(r.note)}</textarea></label><button class="main" onclick="saveF()">Desa la recepta</button>`}
+function saveF(){const L=v=>$('#'+v).value.split('\n').map(s=>s.trim()).filter(Boolean),t=$('#ft').value.trim();if(!t)return alert('Posa-hi un nom a la recepta.');
+const o={t,cat:$('#fc').value,time:$('#fm').value.trim(),serv:Math.max(1,+$('#fs').value||4),ing:L('fi'),steps:L('fp'),note:$('#fn').value.trim()};
+if(S.ed){Object.assign(S.ed,o);S.srv=S.ed.serv;save();go('det')}else{o.id=Date.now().toString(36);R.push(o);save();show(o.id)}}
+function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({r:R,s:SH})],{type:'application/json'}));a.download='receptes-de-la-iaia.json';a.click()}
+function imp(i){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!Array.isArray(d.r))throw 0;R=d.r;SH=d.s||[];save();render();alert('Receptes recuperades.')}catch{alert('Aquest fitxer no és una còpia vàlida.')}};fr.readAsText(i.files[0])}
+render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
