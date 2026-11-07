@@ -19,10 +19,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .note{background:#f6e3c0;border-radius:14px;padding:12px 16px}.empty{color:#8a6a50;text-align:center;padding:24px 0}
 .sh{list-style:none;padding:0}.sh li{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}.sh li.done{text-decoration:line-through;opacity:.5}
 .big{font-size:1.65rem;line-height:1.4;margin:8vh 0 4vh}details{margin:12px 0}summary{cursor:pointer;color:var(--brn)}
-#nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:2px solid var(--line)}#nav button{flex:1;max-width:200px}#nav[hidden]{display:none}
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:2px solid var(--line)}#nav button{flex:1;max-width:200px}#nav[hidden]{display:none}#busy{position:fixed;inset:0;background:rgba(74,46,29,.88);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:1.3rem;z-index:9}#busy[hidden]{display:none}
 @media(prefers-reduced-motion:no-preference){button:active{transform:scale(.97)}}
 </style></head><body><main id="app"></main>
-<nav id="nav"><button onclick="go('home')">Receptes</button><button onclick="go('shop')">Compra <span id="bc"></span></button><button onclick="go('form',{ed:null})">Nova recepta</button></nav>
+<div id="busy" hidden></div><nav id="nav"><button onclick="go('home')">Receptes</button><button onclick="go('shop')">Compra <span id="bc"></span></button><button onclick="go('form',{ed:null,draft:null})">Nova</button></nav>
 <script>
 const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CATS=['Primers','Segons','Postres','Dolços','Altres'];
@@ -40,6 +40,9 @@ const filt=()=>R.filter(r=>(S.cat=='Totes'||r.cat==S.cat)&&(!S.fav||r.fav)&&(r.t
 const cards=l=>l.map(r=>`<article class="card" onclick="show('${r.id}')"><div><h3>${e(r.t)}</h3><p>${e(r.cat)}${r.time?', '+e(r.time):''}</p></div>${r.fav?'<span class="h">♥</span>':''}</article>`).join('')||'<p class="empty">No hi ha cap recepta amb aquest filtre. Prova una altra cerca o afegeix-ne una de nova.</p>';
 const list=()=>$('#list').innerHTML=cards(filt());
 function home(){return `<header class="hero"><img src="logo.jpg" alt="Receptes de la Iaia"></header>
+<button class="main" onclick="$('#cam').click()">Fes una foto d'una recepta</button><input id="cam" type="file" accept="image/*" capture="environment" hidden onchange="scan(this)">
+<button class="ghost" style="width:100%" onclick="$('#gal').click()">Tria una foto de la galeria</button><input id="gal" type="file" accept="image/*" hidden onchange="scan(this)">
+<button id="inst" class="ghost" style="width:100%" ${IP?'':'hidden'} onclick="IP.prompt()">Instal·la l'app al mòbil</button>
 <input id="q" type="search" placeholder="Cerca una recepta o un ingredient" value="${e(S.q)}" oninput="S.q=this.value;list()">
 <div class="chips">${['Totes',...CATS].map(c=>`<button class="chip ${S.cat==c?'on':''}" onclick="S.cat='${c}';render()">${c}</button>`).join('')}<button class="chip ${S.fav?'on':''}" onclick="S.fav=!S.fav;render()">♥ Preferides</button></div>
 <div id="list">${cards(filt())}</div>
@@ -69,7 +72,7 @@ ${SH.length?`<div class="row"><button class="ghost" onclick="SH=SH.filter(s=>!s.
 function addS(){const v=$('#si').value.trim();if(v){SH.push({t:v});save();render()}return false}
 function tg(i){SH[i].d=!SH[i].d;save();render()}
 function edit(id){go('form',{ed:get(id)})}
-function form(){const r=S.ed||{t:'',cat:'Primers',time:'',serv:4,ing:[],steps:[],note:''};return `<div class="bar"><button onclick="${S.ed?"go('det')":"go('home')"}">‹ Cancel·la</button></div><h1>${S.ed?'Edita la recepta':'Nova recepta'}</h1>
+function form(){const r=S.ed||S.draft||{t:'',cat:'Primers',time:'',serv:4,ing:[],steps:[],note:''};return `<div class="bar"><button onclick="${S.ed?"go('det')":"go('home')"}">‹ Cancel·la</button></div><h1>${S.ed?'Edita la recepta':'Nova recepta'}</h1>${S.draft&&!S.ed?'<p class="note">Això és el que he llegit de la foto. Revisa-ho i corregeix el que calgui abans de desar.</p>':''}
 <label>Nom<input id="ft" value="${e(r.t)}"></label><label>Tipus<select id="fc">${CATS.map(c=>`<option ${c==r.cat?'selected':''}>${c}</option>`).join('')}</select></label>
 <div class="row"><label>Temps<input id="fm" value="${e(r.time)}" placeholder="45 min"></label><label>Racions<input id="fs" type="number" min="1" value="${r.serv}"></label></div>
 <label>Ingredients (un per línia, ex. 200 g sucre)<textarea id="fi" rows="7">${e(r.ing.join('\n'))}</textarea></label>
@@ -77,8 +80,20 @@ function form(){const r=S.ed||{t:'',cat:'Primers',time:'',serv:4,ing:[],steps:[]
 <label>El truc de la iaia<textarea id="fn" rows="2">${e(r.note)}</textarea></label><button class="main" onclick="saveF()">Desa la recepta</button>`}
 function saveF(){const L=v=>$('#'+v).value.split('\n').map(s=>s.trim()).filter(Boolean),t=$('#ft').value.trim();if(!t)return alert('Posa-hi un nom a la recepta.');
 const o={t,cat:$('#fc').value,time:$('#fm').value.trim(),serv:Math.max(1,+$('#fs').value||4),ing:L('fi'),steps:L('fp'),note:$('#fn').value.trim()};
-if(S.ed){Object.assign(S.ed,o);S.srv=S.ed.serv;save();go('det')}else{o.id=Date.now().toString(36);R.push(o);save();show(o.id)}}
+if(S.ed){Object.assign(S.ed,o);S.srv=S.ed.serv;save();go('det')}else{o.id=Date.now().toString(36);S.draft=null;R.push(o);save();show(o.id)}}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({r:R,s:SH})],{type:'application/json'}));a.download='receptes-de-la-iaia.json';a.click()}
 function imp(i){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!Array.isArray(d.r))throw 0;R=d.r;SH=d.s||[];save();render();alert('Receptes recuperades.')}catch{alert('Aquest fitxer no és una còpia vàlida.')}};fr.readAsText(i.files[0])}
+let IP,TS;addEventListener('beforeinstallprompt',v=>{v.preventDefault();IP=v;const b=$('#inst');if(b)b.hidden=false});
+const loadTS=()=>TS||(TS=new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';s.onload=ok;s.onerror=()=>{TS=null;ko()};document.head.appendChild(s)}));
+const busy=t=>{const b=$('#busy');b.hidden=!t;b.textContent=t||''};
+const small=f=>new Promise(res=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;const x=c.getContext('2d');x.filter='grayscale(1) contrast(1.3)';x.drawImage(i,0,0,c.width,c.height);c.toBlob(res,'image/jpeg',.9)};i.src=URL.createObjectURL(f)});
+async function scan(inp){const fl=inp.files[0];inp.value='';if(!fl)return;
+try{busy('Preparant la foto...');await loadTS();const img=await small(fl);
+const o=await Tesseract.recognize(img,'cat+spa',{logger:m=>busy((m.status=='recognizing text'?'Llegint la recepta':'Descarregant l\'idioma')+(m.progress?' '+Math.round(m.progress*100)+'%':'')+'...')});
+busy();draft(o.data.text)}catch(x){busy();alert('No he pogut llegir la foto. La primera vegada cal tenir connexió. Torna-ho a provar.')}}
+function draft(t){const L=t.split('\n').map(s=>s.replace(/^[-•*]\s*/,'').trim()).filter(s=>s.length>1),H=/^(ingredients?|ingredientes)\b/i,P=/^(elaboraci|preparaci|procediment|passos|pasos|modo de)/i;
+const hi=L.findIndex(s=>H.test(s)),hs=L.findIndex(s=>P.test(s)),ti=(hi==0||hs==0)?'':(L[0]||''),body=L.slice(ti?1:0).filter(s=>!H.test(s)&&!P.test(s)),isI=s=>/^\d/.test(s)&&s.length<50;
+let ing,st;if(hi>=0&&hs>hi){ing=L.slice(hi+1,hs);st=L.slice(hs+1)}else{ing=body.filter(isI);st=body.filter(s=>!isI(s))}
+if(!ing.length&&!st.length)st=L;go('form',{ed:null,draft:{t:ti,cat:'Altres',time:'',serv:4,ing,steps:st,note:''}})}
 render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
