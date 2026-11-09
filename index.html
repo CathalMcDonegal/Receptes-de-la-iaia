@@ -16,7 +16,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .bar{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
 .srv{display:flex;align-items:center;justify-content:center;gap:18px;background:var(--card);border-radius:999px;padding:6px;margin:14px 0}.srv button{width:44px;height:44px;padding:0;font-size:1.4rem;background:var(--acc);color:#fff}
 .ing{list-style:none;padding:0}.ing li{padding:8px 0;border-bottom:1px dashed var(--line)}ol{padding-left:22px}ol li{margin:10px 0}
-.note{background:#f6e3c0;border-radius:14px;padding:12px 16px}.empty{color:#8a6a50;text-align:center;padding:24px 0}
+.note{background:#f6e3c0;border-radius:14px;padding:12px 16px}.cookmeta{background:#f6e3c0;border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:14px 0}.cookmeta p{margin:5px 0}.empty{color:#8a6a50;text-align:center;padding:24px 0}
 .sh{list-style:none;padding:0}.sh li{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}.sh li.done{text-decoration:line-through;opacity:.5}
 .big{font-size:1.65rem;line-height:1.4;margin:8vh 0 4vh}details{margin:12px 0}summary{cursor:pointer;color:var(--brn)}
 #nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:2px solid var(--line)}#nav button{flex:1;max-width:200px}#nav[hidden]{display:none}#busy{position:fixed;inset:0;background:rgba(74,46,29,.88);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:1.3rem;z-index:9}#busy[hidden]{display:none}
@@ -26,7 +26,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <script>
 const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CATS=['Primers','Segons','Carns','Peix','Verdures','Arrossos','Postres','Dolços','Altres'];
-const Q=(id,t,cat,time,serv,ing,steps,note)=>({id,t,cat,time,serv,ing:ing.split('|'),steps:steps.split('|'),note:note||''});
+const inferCook=r=>{const s=(r.steps||[]).join(' ').toLowerCase();const oven=s.match(/forn[^.]{0,90}?(\d{3})\s*°?c/i);let preheat=oven?'Preescalfa el forn a '+oven[1]+' °C durant 10–15 min':/brasa|graella|flama viva/.test(s)?'Escalfa la graella o la brasa a foc fort':/daura|sofregeix|fregeix|salteja|torra/.test(s)?'Escalfa la paella o cassola a foc moderat':'No cal preescalfament específic';let fire=/foc suau|foc baix|a foc lent|foc fluix/.test(s)?'Fluix':/brasa|graella|flama viva/.test(s)?'Fort':/forn/.test(s)?'Sense foc directe (forn)':/sofregeix|daura|salteja|fregeix/.test(s)?'Moderat':'Moderat';return {preheat,fire,cooktime:r.time||'Segons els passos'};};
+const Q=(id,t,cat,time,serv,ing,steps,note)=>{const r={id,t,cat,time,serv,ing:ing.split('|'),steps:steps.split('|'),note:note||''};return {...r,...inferCook(r)}};
 const SEED=[
 Q('s1','Crema catalana','Postres','45 min',4,'500 ml llet|4 rovells d\'ou|100 g sucre|2 cullerades de maizena|1 pell de llimona|1 branca de canyella','Escalfa la llet amb la pell de llimona i la canyella i deixa-la reposar 10 minuts.|Barreja els rovells amb el sucre i la maizena fins que quedi una pasta suau.|Cola la llet sobre la barreja i remena bé.|Cou-ho a foc baix sense parar de remenar fins que espesseixi.|Reparteix-ho en cassoletes i deixa-ho refredar a la nevera.|Abans de servir, crema-ho amb una capa fina de sucre.','No deixis mai de remenar: si bull, es talla.'),
 Q('s2','Mongetes amb botifarra','Segons','30 min',4,'500 g mongetes del ganxet cuites|4 botifarres|3 grans d\'all|1 cullerada d\'oli','Fregeix les botifarres a la paella fins que quedin daurades.|En una altra paella, daura els alls laminats amb l\'oli.|Afegeix-hi les mongetes i saltejal-les uns minuts.|Serveix-ho tot junt ben calent.'),
@@ -100,7 +101,7 @@ Q('p45','Salsa romesco','Altres','20 min',6,'2 tomàquets|1 cap d\'all|2 nyores|
 Q('p46','Sofregit','Altres','45 min',6,'4 cebes|4 tomàquets|3 grans d\'all|oli d\'oliva|sal','Talla la ceba a trossos petits i sofregeix-la a foc suau.|Afegeix-hi l\'all i el tomàquet ratllat.|Cou-ho molt a poc a poc fins que quedi espès.','És la base de molts plats catalans.')];
 
 let R=JSON.parse(localStorage.getItem('rdi.r')||'null')||SEED,SH=JSON.parse(localStorage.getItem('rdi.s')||'[]'),S={v:'home',q:'',cat:'Totes',fav:0},WL;
-let D=JSON.parse(localStorage.getItem('rdi.d')||'[]');SEED.forEach(s=>{if(!R.some(r=>r.id==s.id)&&!D.includes(s.id))R.push(s)});const save=()=>{localStorage.setItem('rdi.d',JSON.stringify(D));localStorage.setItem('rdi.r',JSON.stringify(R));localStorage.setItem('rdi.s',JSON.stringify(SH))},get=id=>R.find(r=>r.id==id);
+let D=JSON.parse(localStorage.getItem('rdi.d')||'[]');SEED.forEach(s=>{if(!R.some(r=>r.id==s.id)&&!D.includes(s.id))R.push(s)});const save=()=>{localStorage.setItem('rdi.d',JSON.stringify(D));localStorage.setItem('rdi.r',JSON.stringify(R));localStorage.setItem('rdi.s',JSON.stringify(SH))},get=id=>R.find(r=>r.id==id);R.forEach(r=>{const x=inferCook(r);if(!r.preheat)r.preheat=x.preheat;if(!r.fire)r.fire=x.fire;if(!r.cooktime)r.cooktime=x.cooktime});save();
 const f=n=>String(Math.round(n*100)/100).replace('.',',');
 function sc(l,k){const m=l.match(/^(\d+(?:[.,]\d+)?)(?:\s*\/\s*(\d+))?\s*(.*)$/);if(!m)return l;let n=parseFloat(m[1].replace(',','.'));if(m[2])n/=+m[2];return f(n*k)+' '+m[3]}
 function go(v,o={}){Object.assign(S,{v},o);render();scrollTo(0,0)}
@@ -119,6 +120,7 @@ function home(){return `<header class="hero"><img src="logo.jpg" alt="Receptes d
 function show(id){go('det',{id,srv:get(id).serv})}
 function det(){const r=get(S.id),k=S.srv/r.serv;return `<div class="bar"><button onclick="go('home')">‹ Receptes</button><button onclick="fav('${r.id}')" aria-label="Preferida">${r.fav?'♥':'♡'}</button></div>
 <h1>${e(r.t)}</h1><p class="meta">${e(r.cat)}${r.time?', '+e(r.time):''}</p>
+<div class="cookmeta"><p><b>Preescalfament:</b> ${e(r.preheat||'No cal preescalfament específic')}</p><p><b>Intensitat del foc:</b> ${e(r.fire||'Moderat')}</p><p><b>Temps de cocció:</b> ${e(r.cooktime||r.time||'Segons els passos')}</p></div>
 <div class="srv"><button onclick="srv(-1)" aria-label="Menys">−</button><b>${S.srv} racions</b><button onclick="srv(1)" aria-label="Més">+</button></div>
 <h2>Ingredients</h2><ul class="ing">${r.ing.map(i=>`<li>${e(sc(i,k))}</li>`).join('')}</ul>
 <button class="ghost" onclick="addShop()">Afegeix a la llista de la compra</button>
@@ -133,7 +135,7 @@ async function wl(on){try{if(on)WL=await navigator.wakeLock.request('screen');el
 function startCook(){wl(1);go('cook',{i:0})}
 function nxt(){if(S.i<get(S.id).steps.length-1){S.i++;render()}else{wl(0);go('det')}}
 function cook(){const r=get(S.id),n=r.steps.length,k=S.srv/r.serv;return `<div class="bar"><button onclick="wl(0);go('det')">Tanca</button><b>Pas ${S.i+1} de ${n}</b></div>
-<p class="big">${e(r.steps[S.i])}</p><details><summary>Ingredients</summary><ul class="ing">${r.ing.map(i=>`<li>${e(sc(i,k))}</li>`).join('')}</ul></details>
+<div class="cookmeta"><p><b>Foc:</b> ${e(r.fire||'Moderat')}</p><p><b>Temps orientatiu:</b> ${e(r.cooktime||r.time||'Segons els passos')}</p></div><p class="big">${e(r.steps[S.i])}</p><details><summary>Ingredients</summary><ul class="ing">${r.ing.map(i=>`<li>${e(sc(i,k))}</li>`).join('')}</ul></details>
 <div class="row"><button class="ghost" ${S.i?'':'disabled'} onclick="S.i--;render()">Anterior</button><button class="main" onclick="nxt()">${S.i<n-1?'Següent':'Fet, bon profit!'}</button></div>`}
 function shop(){return `<h1>Llista de la compra</h1><form class="row" onsubmit="return addS()"><input id="si" placeholder="Afegeix un producte"><button class="main" style="flex:0 0 110px;margin:0">Afegeix</button></form>
 <ul class="sh">${SH.map((s,i)=>`<li class="${s.d?'done':''}" onclick="tg(${i})">${e(s.t)}</li>`).join('')||'<p class="empty">No hi ha res per comprar. Afegeix ingredients des d\'una recepta.</p>'}</ul>
@@ -143,12 +145,13 @@ function tg(i){SH[i].d=!SH[i].d;save();render()}
 function edit(id){go('form',{ed:get(id)})}
 function form(){const r=S.ed||S.draft||{t:'',cat:'Primers',time:'',serv:4,ing:[],steps:[],note:''};return `<div class="bar"><button onclick="${S.ed?"go('det')":"go('home')"}">‹ Cancel·la</button></div><h1>${S.ed?'Edita la recepta':'Nova recepta'}</h1>${S.draft&&!S.ed?'<p class="note">Això és el que he llegit de la foto. Revisa-ho i corregeix el que calgui abans de desar.</p>':''}
 <label>Nom<input id="ft" value="${e(r.t)}"></label><label>Tipus<select id="fc">${CATS.map(c=>`<option ${c==r.cat?'selected':''}>${c}</option>`).join('')}</select></label>
-<div class="row"><label>Temps<input id="fm" value="${e(r.time)}" placeholder="45 min"></label><label>Racions<input id="fs" type="number" min="1" value="${r.serv}"></label></div>
+<div class="row"><label>Temps total<input id="fm" value="${e(r.time)}" placeholder="45 min"></label><label>Racions<input id="fs" type="number" min="1" value="${r.serv}"></label></div>
+<label>Preescalfament<input id="fpre" value="${e(r.preheat||'')}" placeholder="Ex. forn a 180 °C, 10-15 min"></label><label>Intensitat del foc<input id="ffire" value="${e(r.fire||'Moderat')}" placeholder="Fluix, moderat, fort o forn"></label><label>Temps de cocció<input id="fct" value="${e(r.cooktime||r.time||'')}" placeholder="Ex. 25 minuts"></label>
 <label>Ingredients (un per línia, ex. 200 g sucre)<textarea id="fi" rows="7">${e(r.ing.join('\n'))}</textarea></label>
 <label>Elaboració (un pas per línia)<textarea id="fp" rows="8">${e(r.steps.join('\n'))}</textarea></label>
 <label>El truc de la iaia<textarea id="fn" rows="2">${e(r.note)}</textarea></label><button class="main" onclick="saveF()">Desa la recepta</button>`}
 function saveF(){const L=v=>$('#'+v).value.split('\n').map(s=>s.trim()).filter(Boolean),t=$('#ft').value.trim();if(!t)return alert('Posa-hi un nom a la recepta.');
-const o={t,cat:$('#fc').value,time:$('#fm').value.trim(),serv:Math.max(1,+$('#fs').value||4),ing:L('fi'),steps:L('fp'),note:$('#fn').value.trim()};
+const o={t,cat:$('#fc').value,time:$('#fm').value.trim(),serv:Math.max(1,+$('#fs').value||4),preheat:$('#fpre').value.trim(),fire:$('#ffire').value.trim(),cooktime:$('#fct').value.trim(),ing:L('fi'),steps:L('fp'),note:$('#fn').value.trim()};
 if(S.ed){Object.assign(S.ed,o);S.srv=S.ed.serv;save();go('det')}else{o.id=Date.now().toString(36);S.draft=null;R.push(o);save();show(o.id)}}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({r:R,s:SH})],{type:'application/json'}));a.download='receptes-de-la-iaia.json';a.click()}
 function imp(i){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!Array.isArray(d.r))throw 0;R=d.r;SH=d.s||[];save();render();alert('Receptes recuperades.')}catch{alert('Aquest fitxer no és una còpia vàlida.')}};fr.readAsText(i.files[0])}
